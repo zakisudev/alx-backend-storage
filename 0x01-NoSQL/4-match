@@ -1,0 +1,4 @@
+// Find matching string in a database
+db.school.find({
+  name: 'Holberton school',
+});
