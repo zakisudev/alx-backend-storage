@@ -1,32 +1,19 @@
 #!/usr/bin/env python3
-""" Web page get and post """
-import requests
+""" Web request counter """
 import redis
-import functools
-r = redis.Redis()
+import requests
+rc = redis.Redis()
+count = 0
 
 
-def count_url_calls(func):
-    @functools.wraps(func)
-    def wrapper(url):
-        r.incr(f"count:{url}")
-        return func(url)
-    return wrapper
-
-
-@count_url_calls
-def cache_page(func):
-    @functools.wraps(func)
-    def wrapper(url):
-        result = r.get(url)
-        if result is None:
-            result = func(url)
-            r.set(url, result, ex=10)
-        return result
-    return wrapper
-
-
-@cache_page
 def get_page(url: str) -> str:
-    response = requests.get(url)
-    return response.text
+    """ get a page and cach value"""
+    rc.set(f"cached:{url}", count)
+    resp = requests.get(url)
+    rc.incr(f"count:{url}")
+    rc.setex(f"cached:{url}", 10, rc.get(f"cached:{url}"))
+    return resp.text
+
+
+if __name__ == "__main__":
+    get_page('http://slowwly.robertomurray.co.uk')
